@@ -15,7 +15,9 @@ import router from "./router";
 import "@/icons"; // icon
 import "@/permission"; // permission control
 import * as API from "./api";
+import CategorySelector from "@/components/CategorySelector";
 
+Vue.component("CategorySelector", CategorySelector);
 //把API接口放到vue原型上
 Vue.prototype.$API = API;
 
