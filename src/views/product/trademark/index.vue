@@ -13,10 +13,10 @@
         </template>
       </el-table-column>
       <el-table-column label="操作"> 
-          <template>
-             <el-button  type="warning" size="mini" icon="el-icon-edit"
-                >修改</el-button </el-table-column>
-            <el-button  type="danger" size="mini" icon="el-icon-delete"
+          <template slot-scope="{row}">
+             <el-button  type="warning" size="mini" icon="el-icon-edit" @click="showDiaing(row)"
+                >编辑</el-button </el-table-column>
+            <el-button @click="deleteAttr(row)" type="danger" size="mini" icon="el-icon-delete"
                 >删除</el-button </el-table-column>
           </template>
       </el-table-column>
@@ -48,12 +48,12 @@
 
       注意:尽量把tmForm的内部结构处理成接口所需要的结构
      -->
-        <el-dialog title="收货地址" :visible.sync="dialogFormVisible">
-            <el-form :model="tmForm">
-              <el-form-item label="品牌名称" label-width="100px">
-              <el-input v-model="tmForm.tmName" style="80px" autocomplete="off"></el-input>
+        <el-dialog :title="tmForm.id?`编辑品牌`:`添加品牌`" :visible.sync="dialogFormVisible">
+            <el-form :model="tmForm" :rules="rules" ref="addForm">
+              <el-form-item label="品牌名称" label-width="100px" prop="tmName">
+              <el-input v-model="tmForm.tmName"  style="80px" autocomplete="off"></el-input>
               </el-form-item>
-              <el-form-item label="品牌LOGO" label-width="100px">
+              <el-form-item label="品牌LOGO" label-width="100px" prop="logoUrl">
                 <el-upload
                   class="avatar-uploader"
                   action="/dev-api/admin/product/fileUpload"
@@ -70,7 +70,7 @@
             </el-form>
 
              <div slot="footer" class="dialog-footer">
-                <el-button @click="dialogFormVisible = false">取 消</el-button>
+                <el-button @click="cancel">取 消</el-button>
                  <el-button type="primary" @click="save">确 定</el-button>
               </div>
             
@@ -97,6 +97,15 @@ export default {
         logoUrl: "",
       },
       imageUrl: "", //不管用不用,先复制过来
+      rules: {
+        tmName: [
+          { required: true, message: "请输入品牌名称", trigger: "blur" },
+          { min: 3, max: 10, message: "长度在 3 到 5 个字符", trigger: "blur" },
+        ],
+        logoUrl: [
+          { required: true, message: "请输入品牌LOG", trigger: "change" },
+        ],
+      },
     };
   },
   mounted() {
@@ -107,8 +116,10 @@ export default {
       const {
         data: { total, records },
       } = await this.$API.trademark.getTradeMarkList(this.page, this.limit);
-
       this.total = total;
+      // if (page){
+      //   this.page=page
+      // }
       this.trademarkList = records;
     },
     handleCurrentChange(value) {
@@ -143,28 +154,76 @@ export default {
       }
       return isJPG && isLt2M;
     },
-
-    async save() {
-      try {
-        //发送请求
-        await this.$API.trademark.addOrUpdate(this.tmForm);
-        // 请求最新的品牌列表,由于添加功能,无法知道当前有几页,所以统一请求第一页
-        this.getTradeMarkList();
-
-        this.$message({
-          message: "恭喜你，添加数据成功",
-          type: "success",
+    //编辑
+    showDiaing(row) {
+      this.dialogFormVisible = true;
+      if (row.id) {
+        this.tmForm = {
+          ...row,
+        };
+      }
+    },
+    // 删除
+    deleteAttr(row) {
+      this.$confirm(`此操作将永久删除${row.tmName}, 是否继续?`, "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
+      })
+        .then(async () => {
+          await this.$API.trademark.deleteTradeMark(row.id);
+          this.$message({
+            type: "success",
+            message: "删除成功!",
+          });
+          this.getTradeMarkList(
+            this.trademarkList.length > 1 ? this.page : this.page
+          );
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除",
+          });
         });
-        this.dialogFormVisible = false;
+    },
+    async save() {
+     
+      this.$refs.addForm.validate(async (valid) => {
+        if (valid) {
+          try {
+             //发送请求
+            await this.$API.trademark.addOrUpdate(this.tmForm);
+            // 请求最新的品牌列表,由于添加功能,无法知道当前有几页,所以统一请求第一页
+            this.getTradeMarkList();
 
-        //添加成功后清空数据
-        this.tmForm={
+            this.$message({
+              message: "恭喜你，添加数据成功",
+              type: "success",
+            });
+            this.dialogFormVisible = false;
+
+            //添加成功后清空数据
+            this.tmForm = {
+              tmName: "",
+              logoUrl: "",
+            };
+          } catch (error) {
+            this.$message("数据添加失败");
+          }
+        } else {
+          this.$message("数据添加失败");
+          return false;
+        }
+      });
+      // console.log(this.$refs.addForm);
+    },
+    cancel() {
+      (this.dialogFormVisible = false),
+        (this.tmForm = {
           tmName: "",
           logoUrl: "",
-        };
-      } catch (error) {
-        this.$message("数据添加失败");
-      }
+        });
     },
   },
 };
