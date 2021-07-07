@@ -3,6 +3,7 @@
     <el-form :inline="true" :model="cForm" class="demo-form-inline">
       <el-form-item label="一级标题">
         <el-select v-model="cForm.category1Id" placeholder="请选择" @change="c1Change">
+           <!-- label属性用于控制显示的文本内容,value属性用于控制保存的内容是什么 -->
           <el-option
             :label="c1.name"
             :value="c1.id"
@@ -23,7 +24,7 @@
       </el-form-item>
       </el-form-item>
      <el-form-item label="三级标题">
-        <el-select v-model="cForm.category3Id" placeholder="请选择">
+        <el-select v-model="cForm.category3Id" placeholder="请选择"  @change="c3Change">
           <el-option
             :label="c3.name"
             :value="c3.id"
@@ -76,9 +77,21 @@ export default {
     },
     c1Change() {
       this.getCategory2();
+      this.cForm.category2Id = "";
+      this.cForm.category3Id = "";
+      this.category2List = [];
+      this.category3List = [];
     },
     c2Change() {
       this.getCategory3();
+      this.cForm.category3Id = "";
+      this.cForm.category3Id = "";
+      this.category3List = [];
+    },
+    c3Change() {
+      this.$emit("changeCategory", { id: this.cForm.category1Id, label: 1 });
+      this.$emit("changeCategory", { id: this.cForm.category2Id, label: 2 });
+      this.$emit("changeCategory", { id: this.cForm.category3Id, label: 3 });
     },
   },
 };
