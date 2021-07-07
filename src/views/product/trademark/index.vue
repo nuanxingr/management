@@ -112,14 +112,17 @@ export default {
     this.getTradeMarkList();
   },
   methods: {
-    async getTradeMarkList() {
+    async getTradeMarkList(page) {
       const {
         data: { total, records },
-      } = await this.$API.trademark.getTradeMarkList(this.page, this.limit);
+      } = await this.$API.trademark.getTradeMarkList(
+        page ? page : this.page,
+        this.limit
+      );
       this.total = total;
-      // if (page){
-      //   this.page=page
-      // }
+      if (page) {
+        this.page = page;
+      }
       this.trademarkList = records;
     },
     handleCurrentChange(value) {
@@ -177,7 +180,7 @@ export default {
             message: "删除成功!",
           });
           this.getTradeMarkList(
-            this.trademarkList.length > 1 ? this.page : this.page
+            this.trademarkList.length > 1 ? this.page : this.page-1
           );
         })
         .catch(() => {
@@ -188,11 +191,10 @@ export default {
         });
     },
     async save() {
-     
       this.$refs.addForm.validate(async (valid) => {
         if (valid) {
           try {
-             //发送请求
+            //发送请求
             await this.$API.trademark.addOrUpdate(this.tmForm);
             // 请求最新的品牌列表,由于添加功能,无法知道当前有几页,所以统一请求第一页
             this.getTradeMarkList();
