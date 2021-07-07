@@ -16,8 +16,11 @@ import "@/icons"; // icon
 import "@/permission"; // permission control
 import * as API from "./api";
 import CategorySelector from "@/components/CategorySelector";
+import HintButton from "@/components/HintButton";
 
 Vue.component("CategorySelector", CategorySelector);
+Vue.component("HintButton", HintButton);
+
 //把API接口放到vue原型上
 Vue.prototype.$API = API;
 

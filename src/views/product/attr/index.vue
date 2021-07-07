@@ -20,7 +20,22 @@
             >
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="80"> </el-table-column>
+        <el-table-column label="操作" width="180">
+          <template>
+            <HintButton
+              @click="text"
+              type="info"
+              icon="el-icon-edit"
+              title="编辑"
+            />
+            <HintButton
+              @click="text"
+              type="danger"
+              icon="el-icon-delete"
+              title="删除"
+            />
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
   </div>
@@ -61,6 +76,9 @@ export default {
       );
       console.log(data);
       this.attrList = data;
+    },
+    text() {
+      console.log(11);
     },
   },
 };
