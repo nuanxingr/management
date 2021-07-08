@@ -79,10 +79,10 @@
             </template>
           </el-table-column>
           <el-table-column label="操作" width="160">
-            <template slot-scope="{ row, $index }">
+            <template slot-scope="{ row, $index, }">
               <el-popconfirm
-                :title="`这是一段内容确定 ${row.valueName} 吗？`"
-                @onConfirm="deleteAttrValue($index)"
+                :title="`这是一段内容确定 ${row.valueName} 吗?`"
+                @onConfirm="deleteAttrValue($index,)"
               >
                 <HintButton
                   slot="reference"
