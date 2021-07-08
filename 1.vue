@@ -70,29 +70,18 @@
             <template slot-scope="{ row }">
               <el-input
                 v-if="row.isEdit"
-                ref="editInput"
                 v-model="row.valueName"
                 placeholder="请输入属性值"
-                @blur="toLook(row)"
               ></el-input>
-              <div @click="toEdit(row)" v-else>{{ row.valueName }}</div>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="160">
-            <template slot-scope="{ row, $index }">
-              <el-popconfirm
-                :title="`这是一段内容确定 ${row.valueName} 吗？`"
-                @onConfirm="deleteAttrValue($index)"
-              >
-                <HintButton
-                  slot="reference"
-                  size="mini"
-                  type="danger"
-                  icon="el-icon-delete"
-                  title="删除1"
-                ></HintButton>
-              </el-popconfirm>
-            </template>
+            <HintButton
+              size="mini"
+              type="danger"
+              icon="el-icon-delete"
+              title="删除"
+            ></HintButton>
           </el-table-column>
         </el-table>
         <el-button type="primary">保存</el-button>
@@ -164,8 +153,8 @@ export default {
       console.log(11);
       this.attrFrom.attrValueList.push({
         attrId: this.attrFrom.id, //其实在添加功能中不需要这行,这行代码是为了兼容修改功能
-        valueName: "11",
-        isEdit: false, // 给每个新增的属性值对象添加一个标识isEdit,用于控制编辑模式/展示模式的切换
+        valueName: "",
+        isEdit: true, // 给每个新增的属性值对象添加一个标识isEdit,用于控制编辑模式/展示模式的切换
       });
     },
     showAttrForm(row) {
@@ -181,44 +170,11 @@ export default {
         });
       }
     },
-    toLook(row) {
-      const { valueName } = row;
-      const isRepeat = this.attrFrom.attrValueList.some((item) => {
-        if (item !== row) {
-          return item.valueName === valueName;
-        }
-      });
-      if (isRepeat) {
-        this.$message.info("属性名已有，请重新输入...");
-        return false;
-      }
-      if (valueName) {
-        row.isEdit = false;
-      } else {
-        this.$message.info("属性值不能为空");
-      }
-    },
-    toEdit(row) {
-      row.isEdit = true;
-      // 注意:
-      // 数据更新:同步更新状态数据
-      // 视图更新:Vue 在更新 DOM 时是异步执行的
-      // 通过$nextTick的回调函数,一定可以得到当前的最新DOM
-      // $nextTick的回调函数会在.then中执行
-      this.$nextTick(() => {
-        this.$refs.editInput.focus(); //点一下就可以获得焦点
-      });
-    },
     //当用户点击取消按钮,切换回属性列表,隐藏添加属性模块
     cancel() {
       //清空数据
       this.attrFrom.attrValueList = [];
-      this.attrFrom.attrName = "";
       this.isShowList = true;
-    },
-    //删除编辑
-    deleteAttrValue($index) {
-      this.attrFrom.attrValueList.splice($index, 1);
     },
   },
 };
