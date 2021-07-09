@@ -1,181 +1,167 @@
 <template>
   <div>
     <el-card style="margin: 20px 0">
-      <CategorySelector @changeCategory="changeCategory" />
+      <CategorySelector
+        @changeCategory="changeCategory"
+        :isShowList="isShowList"
+        ><!-- 插槽 --></CategorySelector
+      >
     </el-card>
-    <el-card style="margin: 20px 0">
+    <el-card>
       <div v-show="isShowList">
-        <el-button icon="el-icon-plus" type="primary" @click="showAttrForm"
-          >添加属性1</el-button
-        >
-        <el-table :data="attrList" border style="width: 100%">
-          <el-table-column type="index" label="序号" width="80">
-          </el-table-column>
-          <el-table-column prop="attrName" label="属性名称" width="180">
-          </el-table-column>
-          <el-table-column label="属性值列表">
-            <template slot-scope="{ row }">
-              <el-tag
-                type="success"
-                v-for="attrValue in row.attrValueList"
-                :key="attrValue.id"
-                >{{ attrValue.valueName }}</el-tag
-              >
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="180">
-            <template slot-scope="{ row }">
-              <HintButton
-                type="info"
-                icon="el-icon-edit"
-                title="编辑"
-                @click="showAttrForm(row)"
-              />
-              <HintButton
-                @click="text"
-                type="danger"
-                icon="el-icon-delete"
-                title="删除"
-              />
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-
-      <div v-show="!isShowList">
-        <el-form style="width: 30%" :model="attrFrom" label-width="60px">
-          <el-form-item label="属性名">
-            <el-input
-              v-model="attrFrom.attrName"
-              placeholder="请输入属性名"
-            ></el-input>
-          </el-form-item>
-        </el-form>
         <el-button
           type="primary"
           icon="el-icon-plus"
-          :disabled="!attrFrom.attrName"
-          @click="addAttrValue"
-          >添加属性</el-button
+          @click="showSpuForm"
+          :disabled="!category3Id"
+          >添加SPU</el-button
         >
-        <el-button>取消</el-button>
-
-        <el-table border style="width: 100%" :data="attrFrom.attrValueList">
-          <el-table-column
-            type="index"
-            label="序号"
-            width="80"
-          ></el-table-column>
-          <el-table-column label="属性值">
+        <el-table :data="spuList" style="width: 100%" border>
+          <el-table-column type="index" label="序号" align="center" width="80">
+          </el-table-column>
+          <el-table-column prop="spuName" label="SPU名称"> </el-table-column>
+          <el-table-column prop="description" label="SPU描述">
+          </el-table-column>
+          <el-table-column label="操作">
             <template slot-scope="{ row }">
-              <el-input
-                v-if="row.isEdit"
-                v-model="row.valueName"
-                placeholder="请输入属性值"
-              ></el-input>
+              <HintButton
+                type="success"
+                size="mini"
+                icon="el-icon-plus"
+                title="添加SKU"
+                @click="showSkuForm"
+              ></HintButton>
+              <HintButton
+                type="primary"
+                size="mini"
+                icon="el-icon-edit"
+                @click="showSpuForm(row)"
+                title="修改SPU"
+              ></HintButton>
+              <HintButton
+                type="info"
+                size="mini"
+                icon="el-icon-info"
+                title="查看SKU列表"
+              ></HintButton>
+              <HintButton
+                type="danger"
+                size="mini"
+                icon="el-icon-delete"
+                title="删除SPU"
+              ></HintButton>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="160">
-            <HintButton
-              size="mini"
-              type="danger"
-              icon="el-icon-delete"
-              title="删除"
-            ></HintButton>
-          </el-table-column>
         </el-table>
-        <el-button type="primary">保存</el-button>
-        <el-button @click="cancel">取消</el-button>
+
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          style="text-align: center"
+          :current-page="page"
+          :page-sizes="[2, 5, 10]"
+          :page-size="limit"
+          layout="prev, pager, next, jumper,->,sizes,total"
+          :total="total"
+        >
+        </el-pagination>
       </div>
+      <!-- Vue中,响应式更新视图的最小单位是组件,最小的渲染单位是标签
+            but:并不是说组件拆的越多越好,因为每个组件都会生成一个组件实例对象,很消耗性能
+            标准:一般工作中以功能进行拆分,其次考虑性能(尽量避免一个组件状态和结构过多)
+       -->
+      <SpuForm ref="spuForm" v-show="isShowSpuForm"></SpuForm>
+      <SkuForm v-show="isShowSkuForm"></SkuForm>
     </el-card>
   </div>
 </template>
 
 <script>
-import cloneDeep from "lodash/cloneDeep";
-
+import SpuForm from "./components/SpuForm.vue";
+import SkuForm from "./components/SkuForm.vue";
 export default {
-  name: "Attr",
+  name: "SPU",
   data() {
     return {
       category1Id: "",
       category2Id: "",
       category3Id: "",
-      attrList: [],
-      isShowList: true,
-      attrFrom: {
-        attrName: "", //收集的数据
-        attrValueList: [
-          // {
-          //   attrId: 0, 这是属性的唯一表示,如果是添加肯定没有,修改肯定有
-          //   id: 0, 这是属性值的唯一标识,如果是添加肯定没有,修改可能有
-          //   valueName: "string",
-          // },
-        ],
-        categoryId: 0, //声明当前属性属于哪个分类id
-        categoryLevel: 3, //声明categoryId是几级分类的
-        // id: 0, 新增属性不可能有id,只有修改的时候才会有
-      },
+      // isShowList: true,
+
+      page: 1,
+      limit: 5,
+      total: 20,
+      spuList: [],
+      isShowSpuForm: false,
+      isShowSkuForm: false,
     };
   },
   methods: {
-    changeCategory({ id, label }) {
-      if (label === 1) {
+    changeCategory({ id, level }) {
+      // console.log(value)
+      if (level === 1) {
         this.category1Id = id;
         this.category2Id = "";
         this.category3Id = "";
-      } else if (label === 2) {
+      } else if (level === 2) {
         this.category2Id = id;
         this.category3Id = "";
-      } else if (label === 3) {
+      } else if (level === 3) {
         this.category3Id = id;
-        //发送请求
-        this.getAttrList();
+        // 发送请求
+        this.getSpuList();
       }
     },
-    //发送请求
-    async getAttrList() {
-      const { category1Id, category2Id, category3Id } = this;
-      const { data } = await this.$API.attr.getAttrList(
-        category1Id,
-        category2Id,
-        category3Id
+
+    async getSpuList() {
+      // console.log('发送请求中');
+      const {
+        data: { total, records },
+      } = await this.$API.spu.getSpuList(
+        this.page,
+        this.limit,
+        this.category3Id
       );
-      console.log(data);
-      this.attrList = data;
+      // console.log(result)
+      this.total = total;
+      this.spuList = records;
     },
-    //封装HintButton的测试事件
-    text() {
-      console.log(11);
+
+    // 以下两个函数与分页器有关
+    handleSizeChange(value) {
+      // value为当前修改之后的条数
+      this.limit = value;
+      this.getSpuList();
     },
-    // 用于监视用户点击添加属性值按钮
-    addAttrValue() {
-      console.log(11);
-      this.attrFrom.attrValueList.push({
-        attrId: this.attrFrom.id, //其实在添加功能中不需要这行,这行代码是为了兼容修改功能
-        valueName: "",
-        isEdit: true, // 给每个新增的属性值对象添加一个标识isEdit,用于控制编辑模式/展示模式的切换
-      });
+    handleCurrentChange(value) {
+      // value为当前修改之后的页数
+      this.page = value;
+      this.getSpuList();
     },
-    showAttrForm(row) {
-      this.isShowList = false;
-      if (row.id) {
-        // 此处由于row内部结构过于复杂,不能使用...对其进行浅拷贝,否则会出现问题
-        // 需要对row对象进行深拷贝处理
-        // this.attrForm={...row};
-        this.attrFrom = cloneDeep(row);
-        console.log(this.attrFrom);
-        this.attrFrom.attrValueList.forEach((item) => {
-          this.$set(item, "isEdit", false);
-        });
-      }
+    // 用于显示SpuForm模块
+    showSpuForm(row) {
+      this.isShowSpuForm = true;
+      // 之后会显示出该组件
+      //  间接请求数据(命令spuForm组件请求数据)
+      // console.log(this.$refs.spuForm.spuForm)
+      this.$refs.spuForm.initUpdateSpuForm(row);
     },
-    //当用户点击取消按钮,切换回属性列表,隐藏添加属性模块
-    cancel() {
-      //清空数据
-      this.attrFrom.attrValueList = [];
-      this.isShowList = true;
+    // 用于显示SkuForm模块
+    showSkuForm() {
+      this.isShowSkuForm = true;
     },
+  },
+  computed: {
+    isShowList() {
+      // 只要该计算属性,依赖的数据没有发生变化,该计算属性的结果不会重新计算(计算属性会缓存上一次的结果直接使用)
+      // 依赖的数据(此处说的数据,必须是响应式数据)发生变化,计算属性就会重新计算(不一定)
+      const { isShowSpuForm, isShowSkuForm } = this;
+      return !isShowSpuForm && !isShowSkuForm;
+    },
+  },
+  components: {
+    SpuForm,
+    SkuForm,
   },
 };
 </script>
