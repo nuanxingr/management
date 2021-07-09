@@ -16,6 +16,7 @@ export default {
   },
   // POST /admin/product/saveAttrInfo
   // saveAttrInfo
+
   addOrUpdate(attrInfo) {
     return request.post(`/admin/product/saveAttrInfo`, attrInfo);
   }

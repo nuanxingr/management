@@ -284,7 +284,7 @@ export default {
       //   "id": 0
       // }
       //2.1 将三级分类id存入attrForm中
-      attrForm.categoryId = category3Id;
+      this.attrForm.categoryId = category3Id;
 
       //2.2 如果没有属性名称,也不发送请求
       if (!attrForm.attrName) {

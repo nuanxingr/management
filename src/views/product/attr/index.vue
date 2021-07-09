@@ -79,10 +79,10 @@
             </template>
           </el-table-column>
           <el-table-column label="操作" width="160">
-            <template slot-scope="{ row, $index, }">
+            <template slot-scope="{ row, $index }">
               <el-popconfirm
                 :title="`这是一段内容确定 ${row.valueName} 吗?`"
-                @onConfirm="deleteAttrValue($index,)"
+                @onConfirm="deleteAttrValue($index)"
               >
                 <HintButton
                   slot="reference"
@@ -95,7 +95,7 @@
             </template>
           </el-table-column>
         </el-table>
-        <el-button type="primary">保存</el-button>
+        <el-button type="primary" @click="save">保存</el-button>
         <el-button @click="cancel">取消</el-button>
       </div>
     </el-card>
@@ -104,6 +104,19 @@
 
 <script>
 import cloneDeep from "lodash/cloneDeep";
+const resetAttrForm = () => ({
+  attrName: "",
+  attrValueList: [
+    // {
+    //   attrId: 0, 这是属性的唯一表示,如果是添加肯定没有,修改肯定有
+    //   id: 0, 这是属性值的唯一标识,如果是添加肯定没有,修改可能有
+    //   valueName: "string",
+    // },
+  ],
+  categoryId: 0, //声明当前属性属于哪个分类id
+  categoryLevel: 3, //声明categoryId是几级分类的
+  // id: 0, 新增属性不可能有id,只有修改的时候才会有
+});
 
 export default {
   name: "Attr",
@@ -114,19 +127,7 @@ export default {
       category3Id: "",
       attrList: [],
       isShowList: true,
-      attrFrom: {
-        attrName: "", //收集的数据
-        attrValueList: [
-          // {
-          //   attrId: 0, 这是属性的唯一表示,如果是添加肯定没有,修改肯定有
-          //   id: 0, 这是属性值的唯一标识,如果是添加肯定没有,修改可能有
-          //   valueName: "string",
-          // },
-        ],
-        categoryId: 0, //声明当前属性属于哪个分类id
-        categoryLevel: 3, //声明categoryId是几级分类的
-        // id: 0, 新增属性不可能有id,只有修改的时候才会有
-      },
+      attrFrom: resetAttrForm(),
     };
   },
   methods: {
@@ -220,6 +221,117 @@ export default {
     deleteAttrValue($index) {
       this.attrFrom.attrValueList.splice($index, 1);
     },
+    //保存数据
+    async save() {
+      //1.收集数据
+      // 获取到三级分类id,以及attrForm
+      const { category3Id, attrFrom } = this;
+
+      //2.整理数据结构(满足结构需要)
+      // {
+      //   "attrName": "string",新增要
+      //   "attrValueList": [   新增要
+      //     {
+      //       "attrId": 0,
+      //       "id": 0,
+      //       "valueName": "string"新增要
+      //     }
+      //   ],
+      //   "categoryId": 0,     新增要
+      //   "categoryLevel": 0,     新增要
+      //   "id": 0
+      // }
+      //2.1 将三级分类id存入attrForm中
+      attrFrom.categoryId = category3Id;
+
+      //2.2 如果没有属性名称,也不发送请求
+      if (!attrFrom.attrName) {
+        this.$message.info("属性名不能为空，保存失败！");
+        return;
+      }
+      //2.3 如果没有属性值,也不发送请求
+      if (attrFrom.attrValueList.length === 0) {
+        this.$message.info("至少需要一个属性值,保存失败!!!");
+        return;
+      }
+      //2.4 清除属性值对象身上的多余属性isEdit
+      attrFrom.attrValueList.forEach((item) => {
+        delete item.isEdit;
+      });
+      //3.发送请求
+      try {
+        await this.$API.attr.addOrUpdate(attrFrom);
+        //4.成功做什么
+        this.$message.success("保存成功");
+        //4.1 返回列表页
+        this.isShowList = true;
+
+        //4.2 请求最新的列表页并展示
+        this.getAttrList();
+        //4.3 清空添加属性模块的数据,防止再次进入的时候,数据残留
+        this.attrFrom = resetAttrForm();
+      } catch (error) {}
+      //5.失败做什么
+      this.$message.info("保存失败！！！");
+    },
+    /*  async save() {
+      //1.收集数据
+      // 获取到三级分类id,以及attrForm
+      const { category3Id, attrForm } = this;
+
+      //2.整理数据结构(满足结构需要)
+      // {
+      //   "attrName": "string",新增要
+      //   "attrValueList": [   新增要
+      //     {
+      //       "attrId": 0,
+      //       "id": 0,
+      //       "valueName": "string"新增要
+      //     }
+      //   ],
+      //   "categoryId": 0,     新增要
+      //   "categoryLevel": 0,     新增要
+      //   "id": 0
+      // }
+      //2.1 将三级分类id存入attrForm中
+      attrForm.categoryId = category3Id;
+
+      //2.2 如果没有属性名称,也不发送请求
+      if (!attrForm.attrName) {
+        this.$message.info("属性名称不能为空,保存失败!!!");
+        return;
+      }
+
+      //2.3 如果没有属性值,也不发送请求
+      if (attrForm.attrValueList.length === 0) {
+        this.$message.info("至少需要一个属性值,保存失败!!!");
+        return;
+      }
+
+      //2.4 清除属性值对象身上的多余属性isEdit
+      attrForm.attrValueList.forEach((item) => {
+        delete item.isEdit;
+      });
+
+      try {
+        //3.发送请求
+        await this.$API.attr.addOrUpdate(attrForm);
+        //4.成功做什么
+
+        //4.1 返回列表页
+        this.isShowList = true;
+        this.$message.success("保存成功!!!");
+
+        //4.2 请求最新的列表页并展示
+        this.getAttrList();
+
+        //4.3 清空添加属性模块的数据,防止再次进入的时候,数据残留
+        this.attrForm = resetAttrForm();
+      } catch (error) {
+        //5.失败做什么
+        this.$message.info("保存失败!!!");
+      }
+    }, */
   },
 };
 </script>
