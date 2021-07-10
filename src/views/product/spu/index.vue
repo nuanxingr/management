@@ -21,7 +21,7 @@
           </el-table-column>
 
           <el-table-column align="center" label="操作">
-            <template>
+            <template slot-scope="{ row }">
               <HintButton
                 type="success"
                 size="mini"
@@ -34,7 +34,7 @@
                 size="mini"
                 icon="el-icon-edit"
                 title="修改SPU"
-                @click="showSpuForm"
+                @click="showSpuForm(row)"
               ></HintButton>
               <HintButton
                 type="info"
@@ -64,7 +64,7 @@
         >
         </el-pagination>
       </div>
-      <SpuForm v-show="isShowSpuForm"></SpuForm>
+      <SpuForm ref="spuForm" v-show="isShowSpuForm"></SpuForm>
       <SkuForm v-show="isShowSkuForm"></SkuForm>
     </el-card>
   </div>
@@ -126,8 +126,9 @@ export default {
       this.getSpuList();
     },
     //修改isShowSpuForm: false,切换状态
-    showSpuForm() {
+    showSpuForm(row) {
       this.isShowSpuForm = true;
+      this.$refs.spuForm.initUpdateSpuForm(row);
     },
     showSkuForm() {
       this.isShowSkuForm = true;
