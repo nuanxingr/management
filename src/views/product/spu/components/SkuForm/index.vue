@@ -77,7 +77,12 @@
 
         <el-form-item label="图片列表">
           <!-- @selection-change="handleSelectionChange" -->
-          <el-table :data="SpuImageList" style="width: 100%" border>
+          <el-table
+            @selection-change="selectImage"
+            :data="SpuImageList"
+            style="width: 100%"
+            border
+          >
             <el-table-column type="selection" width="55"> </el-table-column>
             <el-table-column label="图片">
               <template slot-scope="{ row }">
@@ -91,8 +96,15 @@
             <el-table-column prop="imgName" label="名称"> </el-table-column>
             <el-table-column label="操作">
               <template slot-scope="{ row }">
-                <el-button type="primary">设为默认</el-button>
-                <!-- <el-tag type="success">默认</el-tag> @click="setDefault(row)" -->
+                <el-button
+                  type="primary"
+                  @click="changeDefault(row)"
+                  v-if="row.isDefault === '0'"
+                  >设为默认</el-button
+                >
+                <el-tag :disable-transitions="true" type="success" v-else
+                  >默认</el-tag
+                >
               </template>
             </el-table-column>
           </el-table>
@@ -126,7 +138,7 @@ export default {
         skuImageList: [],
         skuSaleAttrValueList: [],
 
-        skuAttrValueList: [
+        /* skuAttrValueList: [
           {
             attrId: 0,
             attrName: "string",
@@ -163,7 +175,7 @@ export default {
 
         spuId: 0,
         tmId: 0,
-        weight: "string",
+        weight: "string", */
       },
       spuForm: {},
       category1Id: "",
@@ -172,6 +184,7 @@ export default {
       attrList: [],
       SpuSaleAttrList: [],
       SpuImageList: [],
+      selectedImageList: [],
     };
   },
   methods: {
@@ -193,7 +206,25 @@ export default {
 
       this.attrList = res[0].data; //平台属性
       this.SpuSaleAttrList = res[1].data; //销售属性
-      this.SpuImageList = res[2].data; //图片
+      const imgList = res[2].data; //图片
+
+      imgList.forEach((item) => {
+        // 此处不需要使用$set,因为当前这个对象在变成响应式对象之前,就已经添加了isDefault属性
+        item.isDefault = "0";
+      });
+      this.SpuImageList = imgList;
+    },
+    //监视用户对图片列表的选择
+    selectImage(value) {
+      console.log("selectImage", value);
+      this.selectedImageList = value; //添加到selectedImageList数据中
+    },
+    // 用于设置默认图片
+    changeDefault(row) {
+      this.SpuImageList.forEach((item) => {
+        item.isDefault = "0";
+      });
+      row.isDefault = "1";
     },
   },
 };
