@@ -12,7 +12,7 @@
         <el-form-item label="价格(元)">
           <el-input
             type="number"
-            v-model="skuForm.skuName"
+            v-model="skuForm.price"
             placeholder="请输入SKU价格"
           ></el-input>
         </el-form-item>
@@ -20,7 +20,7 @@
         <el-form-item label="重量(千克)">
           <el-input
             type="number"
-            v-model="skuForm.skuName"
+            v-model="skuForm.weight"
             placeholder="请输入SKU重量"
           ></el-input>
         </el-form-item>
@@ -28,7 +28,7 @@
         <el-form-item label="规格描述">
           <el-input
             type="textarea"
-            v-model="skuForm.skuName"
+            v-model="skuForm.skuDesc"
             placeholder="请输入SKU规格描述"
           ></el-input>
         </el-form-item>
@@ -40,10 +40,10 @@
               v-for="attr in attrList"
               :key="attr.id"
             >
-              <el-select value="" placeholder="请选择">
+              <el-select v-model="attr.attrIdValueId" placeholder="请选择">
                 <el-option
                   :label="attrValue.valueName"
-                  :value="attrValue.id"
+                  :value="`${attr.id}:${attrValue.id}`"
                   v-for="attrValue in attr.attrValueList"
                   :key="attrValue.id"
                 >
@@ -59,12 +59,15 @@
               :key="SpuSaleAttr.id"
               :label="SpuSaleAttr.saleAttrName"
             >
-              <el-select value="" placeholder="请选择">
+              <el-select
+                v-model="SpuSaleAttr.attrIdValueId"
+                placeholder="请选择"
+              >
                 <el-option
                   v-for="spuSaleAttrValue in SpuSaleAttr.spuSaleAttrValueList"
                   :key="spuSaleAttrValue.id"
                   :label="spuSaleAttrValue.saleAttrValueName"
-                  :value="spuSaleAttrValue.id"
+                  :value="`${SpuSaleAttr.baseSaleAttrId}:${spuSaleAttrValue.id}`"
                 >
                 </el-option>
               </el-select>
@@ -112,8 +115,17 @@ export default {
         category3Id: 0,
         createTime: "2021-07-10T07:13:45.995Z",
         id: 0,
-        isSale: 0,
-        price: 0,
+        //写静态样式通过v-model自动收集好了
+        skuName: "",
+        price: "",
+        weight: "",
+        skuDesc: "",
+        // 需要手动收集
+        skuAttrValueList: [],
+        skuDefaultImg: "",
+        skuImageList: [],
+        skuSaleAttrValueList: [],
+
         skuAttrValueList: [
           {
             attrId: 0,
