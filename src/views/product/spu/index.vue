@@ -27,7 +27,7 @@
                 size="mini"
                 icon="el-icon-plus"
                 title="添加SKU"
-                @click="showSkuForm"
+                @click="showSkuForm(row)"
               ></HintButton>
               <HintButton
                 type="primary"
@@ -65,7 +65,7 @@
         </el-pagination>
       </div>
       <SpuForm ref="spuForm" v-show="isShowSpuForm"></SpuForm>
-      <SkuForm v-show="isShowSkuForm"></SkuForm>
+      <SkuForm ref="skuForm" v-show="isShowSkuForm"></SkuForm>
     </el-card>
   </div>
 </template>
@@ -130,7 +130,15 @@ export default {
       this.isShowSpuForm = true;
       this.$refs.spuForm.initUpdateSpuForm(row);
     },
-    showSkuForm() {
+    //添加sku
+    showSkuForm(row) {
+      const { category1Id, category2Id, category3Id } = this;
+      this.$refs.skuForm.initAddSkuForm(
+        row,
+        category1Id,
+        category2Id,
+        category3Id
+      );
       this.isShowSkuForm = true;
     },
   },
