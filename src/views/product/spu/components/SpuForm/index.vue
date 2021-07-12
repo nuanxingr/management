@@ -46,8 +46,13 @@
       </el-form-item>
 
       <el-form-item label="销售属性">
-        <el-select v-model="spuForm.tmId" placeholder="请选择">
-          <el-option label="属性一" value="1"></el-option>
+        <el-select v-model="spuSaleAttrStr" placeholder="还有一个未选中">
+          <el-option
+            :label="unUseASaleAttr.name"
+            :value="inUseASaleAttr.id"
+            v-for="unUseASaleAttr in unUseSaleAttrList"
+            :key="unUseASaleAttr.id"
+          ></el-option>
         </el-select>
         <el-button icon="el-icon-plus" type="primary">添加销售属性</el-button>
       </el-form-item>
@@ -132,7 +137,7 @@ export default {
       },
       dialogImageUrl: "",
       dialogVisible: false,
-      spuSaleAttrStr: "",
+      spuSaleAttrStr: "", //收集用于添加销售属性
       spuImageList: [], //图片数据
       spuSaleAttrList: [],
       trademarkList: [], //品牌数据
@@ -195,6 +200,10 @@ export default {
       this.getBaseSaleAttrList();
       this.getTradeMarks();
     },
+    //如果是添加就执行这行代码
+    initAddSpuForm() {
+      console.log("添加");
+    },
     //请求图片
     async getSpuImageList(id) {
       const { data } = await this.$API.sku.getSpuImageList(id);
@@ -252,6 +261,33 @@ export default {
 
       // 记得清空spuSaleAttrStr的数据,防止显示错误
       this.spuSaleAttrStr = "";
+    },
+  },
+  computed: {
+    unUseSaleAttrList() {
+      //获取销售属性列表
+      const { spuSaleAttrList: baseSaleAttrList, spuForm } = this;
+      //当前spu拥有所有的销售属性
+      const { spuSaleAttrList } = spuForm;
+      /*  去重思路:
+    1.双层for循环
+    2.对象+数组
+    注意:
+    总销售属性中,属性的唯一标识存在id属性中
+    当前spu拥有的销售属性的唯一标识,存在baseSaleAttrId属性中
+    通过对象记录是否出现过某些属性的id */
+      //通过对象记录是否出现过属性id
+      const saleAttrObj = {};
+      //遍历较短的数组，将当前的数组中出现的所有销售属性的ID存放到对象中，属性值为true
+      spuSaleAttrList.forEach((item) => {
+        //obj[1]=true
+        saleAttrObj[item.baseSaleAttrId] = true;
+      });
+      //遍历较长的数组。通过当前的属性id，去对象中读取数据。查看是否出现过
+      const unUseList = baseSaleAttrList.filter((item) => {
+        return !saleAttrObj[item.id];
+      });
+      return unUseList;
     },
   },
 };
