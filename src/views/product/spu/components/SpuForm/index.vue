@@ -48,13 +48,20 @@
       <el-form-item label="销售属性">
         <el-select v-model="spuSaleAttrStr" placeholder="还有一个未选中">
           <el-option
-            :label="unUseASaleAttr.name"
-            :value="inUseASaleAttr.id"
             v-for="unUseASaleAttr in unUseSaleAttrList"
             :key="unUseASaleAttr.id"
-          ></el-option>
+            :label="unUseASaleAttr.name"
+            :value="`${unUseASaleAttr.name}:${unUseASaleAttr.id}`"
+          >
+          </el-option>
         </el-select>
-        <el-button icon="el-icon-plus" type="primary">添加销售属性</el-button>
+        <el-button
+          icon="el-icon-plus"
+          type="primary"
+          @click="addSaleAttr"
+          :disabled="!spuSaleAttrStr"
+          >添加销售属性</el-button
+        >
       </el-form-item>
       <el-form-item>
         <el-table :data="spuForm.spuSaleAttrList" border style="width: 100%">
@@ -75,26 +82,28 @@
                 v-for="saleAttrValue in row.spuSaleAttrValueList"
                 :key="saleAttrValue.id"
                 closable
+                :disable-transitions="false"
+                @close="handleClose(tag)"
               >
-                <!-- :disable-transitions="false"
-                @close="handleClose(tag)" -->
                 {{ saleAttrValue.saleAttrValueName }}
               </el-tag>
+              <!-- 编辑模式模式 -->
               <el-input
                 class="input-new-tag"
-                v-if="inputVisible"
-                v-model="inputValue"
+                v-if="row.inputVisible"
+                v-model="row.inputValue"
                 ref="saveTagInput"
                 size="small"
-                @keyup.enter.native="handleInputConfirm"
-                @blur="handleInputConfirm"
               >
+                <!-- @blur="handleInputConfirm(row)" -->
+
+                <!-- @keyup.enter.native="handleInputConfirm(row)" -->
               </el-input>
-              <el-button v-else class="button-new-tag" size="small"
-                >+ 添加</el-button
-              >
+              <el-button class="button-new-tag" size="small">+ 添加</el-button>
+              <!-- @click="toEdit(row)" -->
             </template>
           </el-table-column>
+
           <el-table-column label="操作" width="80">
             <template>
               <HintButton
@@ -142,10 +151,7 @@ export default {
       spuSaleAttrList: [],
       trademarkList: [], //品牌数据
       inputVisible: false,
-      inputValue: "",
-
-      inputVisible: false,
-      inputValue: "",
+      inputValue: "", //收集手机添加属性名列表的
     };
   },
   //      {
@@ -207,7 +213,7 @@ export default {
     //请求图片
     async getSpuImageList(id) {
       const { data } = await this.$API.sku.getSpuImageList(id);
-      console.log("图片", data);
+      // console.log("图片", data);
 
       data.forEach((imgObj) => {
         imgObj.name = imgObj.name;
@@ -215,21 +221,52 @@ export default {
       });
       this.spuImageList = data;
     },
+    //点击进入展示模式
+    /*   toEdit(row) {
+      this.$set(row, "inputVisible", true);
+      this.$nextTick(() => {
+        this.$refs.saveTagInput.focus();
+      });
+    }, */
+    //失去焦点变为展示模式
+    /*  handleInputConfirm(row) {
+      const { inputValue } = row;
+      //判断属性名不能为空
+      if (!inputValue.trim()) {
+        this.$message.info("属性名不能为空");
+        return;
+      }
+      const isRepeat = this.spuSaleAttrValueList.some((item) => {
+        return item.saleAttrValueName === inputValue;
+      });
+
+      //判断不能属性名重复
+      if (isRepeat) {
+        this.$message.info("属性名已重复");
+        return;
+      }
+      //将编辑模式变为展示模式 到这里已经是响应式数据了
+      row.inputVisible = false;
+
+      //清空inputValue防止旧数据残留
+      row.inputVisible = "";
+    }, */
     async getSpuInfo(id) {
       const res = await this.$API.spu.getSpuInfo(id);
-      console.log("覆盖spuForm的初始化数据", res);
+      // console.log("覆盖spuForm的初始化数据", res);
       //覆盖spuForm的初始化数据
       this.spuForm = res.data;
     },
     //请求销售属性列表
     async getBaseSaleAttrList() {
       const res = await this.$API.spu.getBaseSaleAttrList();
-      console.log("销售属性列表", res);
+      // console.log("销售属性列表", res);
+      this.spuSaleAttrList = res.data;
     },
     // 根据当前页数page和当前页面显示条数limit,获取对应的品牌列表
     async getTradeMarks() {
       const res = await this.$API.trademark.getTradeMarks();
-      console.log("根据当前页数", res);
+      // console.log("根据当前页数", res);
       this.trademarkList = res.data;
     },
     // 用于监视图片上传是否成功,成功会执行该回调函数
@@ -240,53 +277,63 @@ export default {
       console.log(response, file, fileList);
       this.spuForm.spuImageList = fileList;
     },
+
+    //添加销售属性
     addSaleAttr() {
       // 收集数据
       const { spuSaleAttrStr } = this;
       const [saleAttrName, baseSaleAttrId] = spuSaleAttrStr.split(":");
-
       //整理数据结构
       // 我们手头只有ID,没有属性的属性名
-      // {
-      //   baseSaleAttrId: 0,
-      //   saleAttrName: "",
-      //   spuSaleAttrValueList: [
-      //   ],
-      // },
       this.spuForm.spuSaleAttrList.push({
         saleAttrName,
         baseSaleAttrId,
         spuSaleAttrValueList: [],
       });
-
       // 记得清空spuSaleAttrStr的数据,防止显示错误
       this.spuSaleAttrStr = "";
     },
   },
   computed: {
     unUseSaleAttrList() {
-      //获取销售属性列表
+      // 获取总销售属性列表
       const { spuSaleAttrList: baseSaleAttrList, spuForm } = this;
-      //当前spu拥有所有的销售属性
+      // 当前spu拥有的所有销售属性
       const { spuSaleAttrList } = spuForm;
-      /*  去重思路:
-    1.双层for循环
-    2.对象+数组
-    注意:
-    总销售属性中,属性的唯一标识存在id属性中
-    当前spu拥有的销售属性的唯一标识,存在baseSaleAttrId属性中
-    通过对象记录是否出现过某些属性的id */
-      //通过对象记录是否出现过属性id
+      console.log("spuSaleAttrList", spuSaleAttrList);
+      // 去重,保留两个数组中不重复的部分
+      // map(长度与基础数组一样) filter reduce
+      // 注意:spuForm.spuSaleAttrList中的对象的id是在baseSaleAttrId属性中
+      // baseSaleAttrList数组中对象的id,是存储与id属性
+      // 一个数组长度80,一个数组长度100,最终将要遍历80*100=8000
+      // const unUseList = baseSaleAttrList.filter((item)=>{
+      //   return !(spuSaleAttrList.some((spuSaleAttr)=>{
+      //     // console.log(spuSaleAttr.id,item.baseSaleAttrId)
+      //     return spuSaleAttr.baseSaleAttrId === item.id;
+      //   }))
+      // });
+
+      //去重思路:
+      // 1.双层for循环
+      // 2.对象+数组
+      // 注意:
+      // 总销售属性中,属性的唯一标识存在id属性中
+      // 当前spu拥有的销售属性的唯一标识,存在baseSaleAttrId属性中
+
+      // 通过对象记录是否出现过某些属性的id
       const saleAttrObj = {};
-      //遍历较短的数组，将当前的数组中出现的所有销售属性的ID存放到对象中，属性值为true
+      console.log(saleAttrObj);
+      // 遍历较短的数组,将当前数组中出现的所有的销售属性的id存放到对象中,属性值为true
       spuSaleAttrList.forEach((item) => {
-        //obj[1]=true
+        // obj[1]=true
         saleAttrObj[item.baseSaleAttrId] = true;
       });
-      //遍历较长的数组。通过当前的属性id，去对象中读取数据。查看是否出现过
+      console.log("@spuSaleAttrList", spuSaleAttrList);
+      // 遍历较长的数组,通过当前的属性id,去对象中读取数据,查看是否出现过
       const unUseList = baseSaleAttrList.filter((item) => {
         return !saleAttrObj[item.id];
       });
+      console.log("@unUseList", unUseList);
       return unUseList;
     },
   },
