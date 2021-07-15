@@ -79,11 +79,11 @@
           <el-table-column label="属性名列表">
             <template slot-scope="{ row }">
               <el-tag
-                v-for="saleAttrValue in row.spuSaleAttrValueList"
+                v-for="(saleAttrValue, index) in row.spuSaleAttrValueList"
                 :key="saleAttrValue.id"
                 closable
                 :disable-transitions="false"
-                @close="handleClose(tag)"
+                @close="handleClose(row, index)"
               >
                 {{ saleAttrValue.saleAttrValueName }}
               </el-tag>
@@ -91,33 +91,42 @@
               <el-input
                 class="input-new-tag"
                 v-if="row.inputVisible"
-                v-model="row.inputValue"
+                v-model="inputValue"
                 ref="saveTagInput"
                 size="small"
+                @blur="handleInputConfirm(row)"
               >
-                <!-- @blur="handleInputConfirm(row)" -->
-
                 <!-- @keyup.enter.native="handleInputConfirm(row)" -->
               </el-input>
-              <el-button class="button-new-tag" size="small">+ 添加</el-button>
-              <!-- @click="toEdit(row)" -->
+              <el-button
+                class="button-new-tag"
+                size="small"
+                @click="toEdit(row)"
+                >+ 添加</el-button
+              >
             </template>
           </el-table-column>
 
           <el-table-column label="操作" width="80">
-            <template>
-              <HintButton
-                type="danger"
-                size="mini"
-                icon="el-icon-delete"
-                title="删除"
-              ></HintButton>
+            <template slot-scope="{ row, $index }">
+              <el-popconfirm
+                :title="`确定删除${row.saleAttrName}吗？`"
+                @onConfirm="deleteAttr($index)"
+              >
+                <HintButton
+                  slot="reference"
+                  type="danger"
+                  size="mini"
+                  icon="el-icon-delete"
+                  title="删除"
+                ></HintButton>
+              </el-popconfirm>
             </template>
           </el-table-column>
         </el-table>
       </el-form-item>
       <el-button type="primary">保存</el-button>
-      <el-button type="primary">取消</el-button>
+      <el-button type="primary" @click="cancel">取消</el-button>
     </el-form>
   </div>
 </template>
@@ -148,7 +157,7 @@ export default {
       dialogVisible: false,
       spuSaleAttrStr: "", //收集用于添加销售属性
       spuImageList: [], //图片数据
-      spuSaleAttrList: [],
+      spuSaleAttrList: [], //属性值列表
       trademarkList: [], //品牌数据
       inputVisible: false,
       inputValue: "", //收集手机添加属性名列表的
@@ -222,21 +231,23 @@ export default {
       this.spuImageList = data;
     },
     //点击进入展示模式
-    /*   toEdit(row) {
+    toEdit(row) {
       this.$set(row, "inputVisible", true);
       this.$nextTick(() => {
         this.$refs.saveTagInput.focus();
       });
-    }, */
+    },
     //失去焦点变为展示模式
-    /*  handleInputConfirm(row) {
-      const { inputValue } = row;
+    handleInputConfirm(row) {
+      // console.log("row", row);
+      const { inputValue } = this;
+      console.log("inputValue", inputValue);
       //判断属性名不能为空
       if (!inputValue.trim()) {
         this.$message.info("属性名不能为空");
         return;
       }
-      const isRepeat = this.spuSaleAttrValueList.some((item) => {
+      const isRepeat = row.spuSaleAttrValueList.some((item) => {
         return item.saleAttrValueName === inputValue;
       });
 
@@ -248,9 +259,23 @@ export default {
       //将编辑模式变为展示模式 到这里已经是响应式数据了
       row.inputVisible = false;
 
+      //收集Id然后推入一个对象进行动态渲染
+      const Obj = {
+        baseSaleAttrId: row.baseSaleAttrId,
+        saleAttrValueName: inputValue,
+      };
+      row.spuSaleAttrValueList.push(Obj);
       //清空inputValue防止旧数据残留
-      row.inputVisible = "";
-    }, */
+      this.inputValue = "";
+    },
+    //删除属性列表值
+    handleClose(row, $index) {
+      row.spuSaleAttrValueList.splice($index, 1);
+    },
+    //监视用户删除属性
+    deleteAttr($index) {
+      this.spuForm.spuSaleAttrList.splice($index, 1);
+    },
     async getSpuInfo(id) {
       const res = await this.$API.spu.getSpuInfo(id);
       // console.log("覆盖spuForm的初始化数据", res);
@@ -263,7 +288,7 @@ export default {
       // console.log("销售属性列表", res);
       this.spuSaleAttrList = res.data;
     },
-    // 根据当前页数page和当前页面显示条数limit,获取对应的品牌列表
+    // 获取总销售属性列表
     async getTradeMarks() {
       const res = await this.$API.trademark.getTradeMarks();
       // console.log("根据当前页数", res);
@@ -293,14 +318,26 @@ export default {
       // 记得清空spuSaleAttrStr的数据,防止显示错误
       this.spuSaleAttrStr = "";
     },
+    //取消清空数据返回上一页
+    cancel() {
+      // 通知父组件隐藏当前的spuForm组件
+      this.$emit("update:visible", false);
+      this.resetData();
+      this.$emit("cancel");
+    },
+    //重置组件数据
+    resetData() {
+      Object.assign(this.$data, this.$options.data());
+    },
   },
+
   computed: {
     unUseSaleAttrList() {
       // 获取总销售属性列表
       const { spuSaleAttrList: baseSaleAttrList, spuForm } = this;
       // 当前spu拥有的所有销售属性
       const { spuSaleAttrList } = spuForm;
-      console.log("spuSaleAttrList", spuSaleAttrList);
+      // console.log("spuSaleAttrList", spuSaleAttrList);
       // 去重,保留两个数组中不重复的部分
       // map(长度与基础数组一样) filter reduce
       // 注意:spuForm.spuSaleAttrList中的对象的id是在baseSaleAttrId属性中
@@ -322,18 +359,18 @@ export default {
 
       // 通过对象记录是否出现过某些属性的id
       const saleAttrObj = {};
-      console.log(saleAttrObj);
+      // console.log(saleAttrObj);
       // 遍历较短的数组,将当前数组中出现的所有的销售属性的id存放到对象中,属性值为true
       spuSaleAttrList.forEach((item) => {
         // obj[1]=true
         saleAttrObj[item.baseSaleAttrId] = true;
       });
-      console.log("@spuSaleAttrList", spuSaleAttrList);
+      // console.log("@spuSaleAttrList", spuSaleAttrList);
       // 遍历较长的数组,通过当前的属性id,去对象中读取数据,查看是否出现过
       const unUseList = baseSaleAttrList.filter((item) => {
         return !saleAttrObj[item.id];
       });
-      console.log("@unUseList", unUseList);
+      // console.log("@unUseList", unUseList);
       return unUseList;
     },
   },
