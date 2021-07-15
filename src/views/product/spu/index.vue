@@ -80,7 +80,7 @@
           </el-table>
         </el-dialog>
       </div>
-      <SpuForm ref="spuForm" :visible.sync="isShowSpuForm" v-show="isShowSpuForm"></SpuForm>
+      <SpuForm ref="spuForm" :category3Id="category3Id" :visible.sync="isShowSpuForm" v-show="isShowSpuForm"></SpuForm>
       <SkuForm ref="skuForm" :visible.sync="isShowSkuForm" v-show="isShowSkuForm"></SkuForm>
     </el-card>
   </div>

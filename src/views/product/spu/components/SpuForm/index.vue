@@ -125,13 +125,14 @@
           </el-table-column>
         </el-table>
       </el-form-item>
-      <el-button type="primary">保存</el-button>
+      <el-button type="primary" @click="save">保存</el-button>
       <el-button type="primary" @click="cancel">取消</el-button>
     </el-form>
   </div>
 </template>
 
 <script>
+import { spu } from "@/api";
 export default {
   name: "SpuForm",
   data() {
@@ -198,6 +199,7 @@ export default {
   // }
   //     }
   //   }
+  props: ["visible", "category3Id"],
   methods: {
     //删除图片
     handleRemove(file, fileList) {
@@ -328,6 +330,95 @@ export default {
     //重置组件数据
     resetData() {
       Object.assign(this.$data, this.$options.data());
+    },
+    //保存数据
+    async save() {
+      // 1.收集 三级分类、spuForm和当前的SPU的图片列表（防止用户没有修改列表属性）
+      const { category3Id, spuForm, spuImageList } = this;
+      console.log("@", spuImageList);
+      //2.整理数据
+      //2.1 三级分类id
+      spuForm.category3Id = category3Id;
+      //2.2 图片列表数据处理
+      // 图片墙功能,如果用户没有上传或者删除图片操作,那么spuForm.spuImageList是null
+      // 如果在上传和删除操作的时候,也把数组放入this.spuImageList属性中,此处可以不进行判断
+      spuForm.spuImageList = spuForm.spuImageList || spuImageList;
+
+      // 请求回来的图片对象
+      // {
+      //   id: 1;
+      //   imgName: "2ff0882c9607e57c.jpg";
+      //   imgUrl: "http://47.93.148.192:8080/group1/M00/00/01/rBHu8l-rfvmAIpgZAAIvrX6L9fo612.jpg";
+      //   name: "2ff0882c9607e57c.jpg";
+      //   spuId: 1;
+      //   status: "success";
+      //   uid: 1625885180103;
+      //   url: "http://47.93.148.192:8080/group1/M00/00/01/rBHu8l-rfvmAIpgZAAIvrX6L9fo612.jpg";
+      // }
+
+      //上传成功的图片对象
+      // {
+      //   name: "钉钉的啊.png";
+      //   percentage: 100;
+      //   raw: File;
+      //   response: Object;
+      //   size: 124779;
+      //   status: "success";
+      //   uid: 1625885239094;
+      //   url: "blob:http://localhost:9528/2a8535d9-34de-47a4-a0ae-b70b6e8df5b7";
+      // }
+
+      // 发送请求需要的图片对象结构
+      // {
+      //       imgName: "string",
+      //       imgUrl: "string",
+      // }
+      /* spuForm.spuImageList = spuForm.spuImageList.map((imageObj) => {
+        // 2.3判断如果是修改的话就删除name和url（因为保存的数据接口不需要）
+        if (imageObj.imgUrl) {
+          delete imageObj.name;
+          delete imgUrl.url;
+          return imageObj;
+        } else {
+          return {
+            imageObj: imageObj.name,
+            imgUrl: imageObj.response.data,
+          };
+        }
+      }); */
+      spuForm.spuImageList = spuForm.spuImageList.map((imageObj) => {
+        if (imageObj.imgUrl) {
+          // 用户之前上传好的图片
+          delete imageObj.name;
+          delete imageObj.url;
+          return imageObj;
+        } else {
+          return {
+            imgName: imageObj.name,
+            imgUrl: imageObj.response.data,
+          };
+        }
+      });
+      // 2.4删除属性身上的多余属性
+      spuForm.spuSaleAttrList.forEach((item) => {
+        delete item.inputVisible;
+        delete item.inputValue;
+      });
+
+      // 3发送请求
+      try {
+        // 3.1成功了什么
+        await this.$API.spu.addOrUpdate(spuForm);
+        this.$message.success("保存成功");
+        //清空数据
+        this.resetData();
+        this.$emit("update:visible", false);
+        //通知父组件请求最新的列表
+        this.$emit("success");
+      } catch (error) {
+        // 3.2失败的做什么
+        this.$message.info("保存失败");
+      }
     },
   },
 
