@@ -43,12 +43,20 @@
                 title="查看SKU列表"
                 @click="showSkuList(row)"
               ></HintButton>
-              <HintButton
-                type="danger"
-                size="mini"
-                icon="el-icon-delete"
-                title="删除SPU"
-              ></HintButton>
+              
+                <el-popconfirm
+                  :title="`确定删除${row.spuName}吗？`"
+                  @onConfirm="delSpuName(row.id)"
+                  >
+                   <HintButton
+                   slot="reference"
+                   type="danger"
+                   size="mini"
+                   icon="el-icon-delete"
+                   title="删除SPU"
+               ></HintButton>
+                </el-popconfirm>
+ 
             </template>
           </el-table-column>
         </el-table>
@@ -183,6 +191,15 @@ export default {
 
       //存放到skuList中
       this.skuList = data;
+    },
+    //删除spu属性列表
+    async delSpuName(id) {
+      try {
+        await this.$API.spu.deleteSpu(id);
+        this.$message.success("删除成功");
+      } catch (error) {
+        this.$message.info("删除失败");
+      }
     },
   },
   computed: {
