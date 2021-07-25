@@ -63,7 +63,7 @@
           @click="addAttrValue"
           >添加属性</el-button
         >
-        <el-button>取消</el-button>
+        <el-button @click="cancelAttribute">取消2</el-button>
 
         <el-table border style="width: 100%" :data="attrFrom.attrValueList">
           <el-table-column
@@ -182,6 +182,14 @@ export default {
         valueName: "11",
         isEdit: false, // 给每个新增的属性值对象添加一个标识isEdit,用于控制编辑模式/展示模式的切换
       });
+    },
+    //用于监视取消添加属性
+    cancelAttribute() {
+      const { attrFrom } = this;
+      let attrName = attrFrom.attrName;
+      attrName = "";
+      attrFrom.attrName = attrName;
+      console.log(attrName);
     },
     showAttrForm(row) {
       this.isShowList = false;
