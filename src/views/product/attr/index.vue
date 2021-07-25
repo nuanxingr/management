@@ -24,19 +24,24 @@
             </template>
           </el-table-column>
           <el-table-column label="操作" width="180">
-            <template slot-scope="{ row }">
+            <template slot-scope="{ row, $index }">
               <HintButton
                 type="info"
                 icon="el-icon-edit"
                 title="编辑"
                 @click="showAttrForm(row)"
               />
-              <HintButton
-                @click="text"
-                type="danger"
-                icon="el-icon-delete"
-                title="删除"
-              />
+              <el-popconfirm
+                :title="`这是一段内容确定吗?`"
+                @onConfirm="attrListValue(row.id)"
+              >
+                <HintButton
+                  slot="reference"
+                  type="danger"
+                  icon="el-icon-delete"
+                  title="删除2"
+                />
+              </el-popconfirm>
             </template>
           </el-table-column>
         </el-table>
@@ -157,12 +162,21 @@ export default {
       this.attrList = data;
     },
     //封装HintButton的测试事件
-    text() {
-      console.log(11);
+    //删除属性列表
+    async attrListValue(id) {
+      console.log(id);
+      //发送请求
+      try {
+        await this.$API.attr.deleteAttr(id);
+        this.$message.success("删除成功");
+        this.getAttrList();
+      } catch (error) {
+        this.$message.info("删除失败");
+      }
     },
     // 用于监视用户点击添加属性值按钮
     addAttrValue() {
-      console.log(11);
+      // console.log(11);
       this.attrFrom.attrValueList.push({
         attrId: this.attrFrom.id, //其实在添加功能中不需要这行,这行代码是为了兼容修改功能
         valueName: "11",
@@ -270,9 +284,10 @@ export default {
         this.getAttrList();
         //4.3 清空添加属性模块的数据,防止再次进入的时候,数据残留
         this.attrFrom = resetAttrForm();
-      } catch (error) {}
-      //5.失败做什么
-      this.$message.info("保存失败！！！");
+      } catch (error) {
+        //5.失败做什么
+        this.$message.info("保存失败！！！");
+      }
     },
     /*  async save() {
       //1.收集数据
